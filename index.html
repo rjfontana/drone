@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Radaz Drone Pilot - Estética Infográfico</title>
+    <title>Radaz Drone Pilot - Sensoriamento</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { margin: 0; overflow: hidden; background: #fdfdfd; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         canvas { display: block; }
- 
+
         .ui-panel {
             position: absolute;
             top: 20px;
@@ -21,8 +21,7 @@
             max-width: 320px;
             z-index: 10;
         }
-  
-        /* CORREÇÃO: adicionado padding, cursor e margin para os botões de banda ficarem clicáveis */
+
         .band-btn {
             padding: 8px 12px;
             margin: 4px 0;
@@ -35,42 +34,105 @@
             transition: background 0.15s;
         }
         .band-btn:hover { background: #f5f5f5; }
- 
-        .band-btn.disabled {
-            pointer-events: none;
-            opacity: 0.5;
-        }
- 
+        .band-btn.disabled { pointer-events: none; opacity: 0.5; }
         .band-c { border-left: 4px solid #FFCC00; }
         .band-l { border-left: 4px solid #F57C00; }
         .band-p { border-left: 4px solid #795548; }
- 
         .active { background: #f0f0f0; border-color: #999; font-weight: bold; }
- 
-        .inventory {
+
+        /* ── Painel Gamepad ────────────────────────────── */
+        #gamepad-panel {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(20, 20, 30, 0.92);
+            color: #fff;
+            border-radius: 12px;
+            padding: 12px 18px;
+            font-size: 11px;
+            z-index: 20;
+            display: none;
+            min-width: 360px;
+            max-width: 95vw;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+            font-family: 'Courier New', monospace;
+            border: 1px solid rgba(255,204,0,0.3);
+        }
+        #gamepad-panel.visible { display: block; }
+        #gamepad-panel h3 {
+            margin: 0 0 8px 0;
+            font-size: 12px;
+            color: #FFCC00;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .gp-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px 16px;
+        }
+        .gp-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 2px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .gp-label { color: #aaa; }
+        .gp-value {
+            color: #FFCC00;
+            font-weight: bold;
+            min-width: 70px;
+            text-align: right;
+        }
+        .gp-value.active-val { color: #4ade80; }
+        .gp-axes-row {
+            display: flex;
+            gap: 12px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+        .axis-bar-wrap { display: flex; align-items: center; gap: 4px; }
+        .axis-bar-bg {
+            width: 80px; height: 8px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+            position: relative;
+            overflow: hidden;
+        }
+        .axis-bar-fill {
+            position: absolute;
+            top: 0; height: 100%;
+            background: #FFCC00;
+            border-radius: 4px;
+            transition: left 0.05s, width 0.05s;
+        }
+
+        /* ── Notificação de conexão ────────────────────── */
+        #gp-toast {
             position: absolute;
             top: 20px;
             right: 20px;
-            background: #fff;
-            border: 1px solid #ddd;
-            padding: 15px;
-            min-width: 180px;
-        }
-        .ec-brand {
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
-            max-width: 160px;
-            height: auto;
+            background: rgba(20,20,30,0.92);
+            color: #fff;
             border-radius: 8px;
-            z-index: 5;
+            padding: 10px 16px;
+            font-size: 12px;
+            z-index: 30;
+            display: none;
+            border-left: 4px solid #4ade80;
+            max-width: 260px;
+            font-family: 'Courier New', monospace;
         }
+        #gp-toast.error { border-color: #f87171; }
+
         .inv-title { font-weight: bold; border-bottom: 2px solid #eee; margin-bottom: 8px; font-size: 0.8rem; text-transform: uppercase; color: #666; }
         .inv-item { display: flex; justify-content: space-between; margin: 4px 0; font-size: 0.9rem; }
- 
+
         #message-box {
             position: absolute;
-            bottom: 40px;
+            bottom: 100px;
             left: 50%;
             transform: translateX(-50%);
             background: #333;
@@ -80,8 +142,9 @@
             display: none;
             white-space: nowrap;
             z-index: 15;
+            border-radius: 4px;
         }
- 
+
         .mobile-controls {
             position: absolute;
             bottom: 20px;
@@ -102,7 +165,7 @@
             touch-action: none;
         }
         .control-row { display: flex; gap: 10px; }
- 
+
         #start-screen {
             position: absolute;
             inset: 0;
@@ -112,9 +175,9 @@
             justify-content: flex-start;
             padding: 40px 40px 80px 40px;
             background: center / cover no-repeat url('capa.png');
-            background-color: #000;
+            background-color: #111;
         }
- 
+
         #btn-play {
             background: rgba(255, 255, 255, 0.95);
             color: #111;
@@ -126,43 +189,55 @@
             cursor: pointer;
             box-shadow: 0 10px 30px rgba(0,0,0,0.15);
         }
- 
+
+        .ec-brand {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            max-width: 160px;
+            height: auto;
+            border-radius: 8px;
+            z-index: 5;
+        }
+
         @media (max-width: 768px) {
-            .ui-panel { max-width: 280px; padding: 15px; }
-            .inventory { min-width: 150px; padding: 10px; }
-            .ec-brand { max-width: 120px; }
+            .ui-panel { max-width: 260px; padding: 12px; }
+            .ec-brand { max-width: 100px; }
             .mobile-controls { display: flex; }
             #start-screen { padding: 20px; }
-            #btn-play { padding: 14px 20px; font-size: 0.95rem; }
+            #gamepad-panel { font-size: 10px; min-width: 280px; }
         }
     </style>
 </head>
 <body>
- 
+
 <div class="ui-panel">
     <div class="flex justify-between items-center mb-2">
         <h2 class="text-lg font-bold text-gray-800">Monitoramento SAR</h2>
-        <!-- CORREÇÃO: passar o evento como parâmetro em vez de usar `event` global -->
         <button onclick="togglePanel(this)" class="text-gray-500 hover:text-gray-700 text-xl">−</button>
     </div>
     <div id="panel-content">
         <p class="text-xs mb-4 text-gray-500 italic">Inspirado na tecnologia Radaz / Unicamp</p>
- 
+
         <div id="btn-c" class="band-btn band-c active" onclick="setBand('C')">
             <span>Banda C (5,5 GHz)</span>
-            <span class="text-[10px] text-gray-400">1</span>
+            <span class="text-[10px] text-gray-400">1 / LB</span>
         </div>
         <div id="btn-l" class="band-btn band-l" onclick="setBand('L')">
             <span>Banda L (1,2 GHz)</span>
-            <span class="text-[10px] text-gray-400">2</span>
+            <span class="text-[10px] text-gray-400">2 / RB</span>
         </div>
         <div id="btn-p" class="band-btn band-p" onclick="setBand('P')">
             <span>Banda P (400 MHz)</span>
             <span class="text-[10px] text-gray-400">3</span>
         </div>
- 
-        <div class="mt-4 text-[11px] text-gray-500 leading-tight">
-            <b>Dica:</b> Use a banda C para mapear árvores. Ao passar com C, elas devem aparecer destacadas e ser registradas.
+
+        <div class="mt-3 text-[10px] text-gray-500 leading-tight space-y-1">
+            <div><b>🎮 Controle:</b> Analógico/D-pad = mover</div>
+            <div><b>A/◯/Cruzado</b> = Feixe radar</div>
+            <div><b>LB/L1</b> = Banda C &nbsp; <b>RB/R1</b> = Banda L</div>
+            <div><b>X/◻</b> = Ativar banda &nbsp; <b>Y/△</b> = Próxima banda</div>
+            <div><b>Start/Options</b> = Mostrar/ocultar debug</div>
         </div>
     </div>
     <div class="inv-title mt-4">Dados Coletados</div>
@@ -170,419 +245,717 @@
     <div class="inv-item"><span>L - Biomassa:</span> <b id="count-L">0</b></div>
     <div class="inv-item"><span>P - Subsolo:</span> <b id="count-P">0</b></div>
 </div>
- 
+
+<!-- Toast de conexão/desconexão -->
+<div id="gp-toast"></div>
+
+<!-- Painel de debug do gamepad -->
+<div id="gamepad-panel">
+    <h3>🎮 Gamepad Debug</h3>
+    <div id="gp-name" style="color:#aaa;font-size:10px;margin-bottom:8px;word-break:break-all;"></div>
+    <div class="gp-grid" id="gp-buttons-grid"></div>
+    <div class="gp-axes-row" id="gp-axes-row"></div>
+</div>
+
 <div id="message-box"></div>
 <img src="ec.png" alt="Estação Ciência USP" class="ec-brand">
- 
+
 <div class="mobile-controls" id="mobile-controls">
     <div class="control-row">
         <button class="control-btn" id="btn-left">←</button>
         <button class="control-btn" id="btn-right">→</button>
     </div>
     <div class="control-row">
-        <button class="control-btn" id="btn-beam">Beam</button>
+        <button class="control-btn" id="btn-beam">Feixe</button>
     </div>
 </div>
- 
+
 <div id="start-screen">
-    <button id="btn-play">PLAY</button>
+    <button id="btn-play">▶ PLAY</button>
 </div>
- 
+
 <canvas id="gameCanvas"></canvas>
- 
+
 <script>
-    // ─── Constantes ───────────────────────────────────────────────
-    const DRONE_SPEED              = 6;
-    const LANDSCAPE_SPEED          = 1.8;
-    const TREE_SPACING             = 250;
-    const TREE_HIGHLIGHT_RADIUS    = 45;
-    const TARGET_SPAWN_MIN_DELAY   = 1200;
-    const TARGET_SPAWN_VARIANCE    = 2000;
-    const TARGET_VELOCITY_MIN      = -1;
-    const TARGET_VELOCITY_VARIANCE = 1.2;
-    const COLLECTION_DISTANCE      = 50;
-    const TREE_LEAVES_RADIUS       = 70;
- 
-    const COLORS = {
-        C: '#FFCC00',
-        L: '#F57C00',
-        P: '#795548',
-        SKY: '#eef2f5',
-        LEAVES: '#a8c69f',
-        TRUNK: '#7c6a5a',
-        SOIL_TOP: '#dcd6bc',
-        SOIL_DEEP: '#c8bf9d'
-    };
- 
-    const MESSAGES = {
-        C: [
-            "Dureza foliar mapeada: copa saudável.",
-            "Índice de área foliar registrado.",
-            "Estrutura do dossel analisada."
-        ],
-        L: [
-            "Volume de tronco estimado: +50kg de biomassa.",
-            "Estrutura lenhosa detectada sob as folhas.",
-            "Densidade da madeira registrada."
-        ],
-        P: [
-            "Umidade do solo detectada a 50cm de profundidade.",
-            "Formigueiro subterrâneo identificado!",
-            "Anomalia geológica detectada no subsolo."
-        ]
-    };
- 
-    // ─── Canvas ───────────────────────────────────────────────────
-    const canvas = document.getElementById('gameCanvas');
-    const ctx    = canvas.getContext('2d');
-    const msgBox = document.getElementById('message-box');
- 
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
- 
-    // ─── Imagens ──────────────────────────────────────────────────
-    function loadImage(src) {
-        const img = new Image();
-        img.src = src;
-        img.onerror = () => console.warn(`Imagem não encontrada: ${src}`);
-        return img;
-    }
- 
-    const droneImage      = loadImage('drone.png');
-    const antImage        = loadImage('formiga.png');
-    const treeImage1      = loadImage('arvore1.png');
-    const treeImage2      = loadImage('arvore2.png');
-    const treeImage11     = loadImage('arvore11.png');
-    const backgroundImage = loadImage('fundo.png');
- 
-    // ─── Estado ───────────────────────────────────────────────────
-    const state = {
-        drone: { x: 400, y: 80, speed: DRONE_SPEED },
-        band: 'C',
-        inventory: { C: 0, L: 0, P: 0 },
-        targets: [],
-        trees: [],
-        keys: {},
-        landscapeOffset: 0,
-        lastSpawnTime: performance.now(),
-        nextSpawnDelay: TARGET_SPAWN_MIN_DELAY + Math.random() * TARGET_SPAWN_VARIANCE
-    };
- 
-    let width, height;
-    let gameStarted = false;
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
- 
-    // ─── Resize ───────────────────────────────────────────────────
-    // CORREÇÃO: sempre usa window.innerWidth/Height para o canvas principal;
-    // a imagem de fundo é desenhada escalada para preencher o canvas.
-    function resize() {
-        width  = canvas.width  = window.innerWidth;
-        height = canvas.height = window.innerHeight;
-        createTrees();
-    }
- 
-    function createTrees() {
-        state.trees = [];
-        const count = Math.ceil(width / TREE_SPACING) + 3;
-        for (let i = -1; i < count; i++) {
-            state.trees.push({
-                index: i,
-                marked: false,
-                currentImage: treeImage1
-            });
-        }
-    }
- 
-    window.addEventListener('resize', resize);
-    resize();
- 
-    // ─── Início ───────────────────────────────────────────────────
-    // CORREÇÃO: registrar o listener diretamente (sem depender de DOMContentLoaded
-    // que pode já ter disparado quando o script roda no final do <body>).
-    function startGame() {
-        const startScreen = document.getElementById('start-screen');
-        if (startScreen) startScreen.style.display = 'none';
-        if (isMobile) {
-            const mc = document.getElementById('mobile-controls');
-            if (mc) mc.classList.add('show');
-        }
-        gameStarted = true;
-        resize();
-        // Pré-populate alvos
-        for (let i = 0; i < 5; i++) state.targets.push(createTarget());
-        requestAnimationFrame(gameLoop); // CORREÇÃO: iniciar apenas um loop
-    }
- 
-    document.getElementById('btn-play').addEventListener('click', startGame);
- 
-    // ─── Alvos ────────────────────────────────────────────────────
-    function createTarget() {
-        const types = ['L', 'P'];
-        const type  = types[Math.floor(Math.random() * types.length)];
-        const yPos  = type === 'L' ? 450 : 600;
-        const isAnt = type === 'P' && Math.random() < 0.5;
-        return {
-            id: Math.random(),
-            x: Math.random() * (width - 300) + 150,
-            y: yPos,
-            type,
-            collected: false,
-            isAnt,
-            vx: TARGET_VELOCITY_MIN - Math.random() * TARGET_VELOCITY_VARIANCE
-        };
-    }
- 
-    // ─── UI helpers ───────────────────────────────────────────────
-    function setBand(b) {
-        state.band = b;
-        document.querySelectorAll('.band-btn').forEach(btn => btn.classList.remove('active'));
-        const btn = document.getElementById(`btn-${b.toLowerCase()}`);
-        if (btn) btn.classList.add('active');
-    }
- 
-    // CORREÇÃO: recebe o botão como parâmetro em vez de usar `event` global
-    function togglePanel(btn) {
-        const content = document.getElementById('panel-content');
-        if (content.style.display === 'none') {
-            content.style.display = 'block';
-            btn.textContent = '−';
-        } else {
-            content.style.display = 'none';
-            btn.textContent = '+';
-        }
-    }
- 
-    let msgTimeout = null;
-    function showMessage(text) {
-        msgBox.textContent = text;
-        msgBox.style.display = 'block';
-        if (msgTimeout) clearTimeout(msgTimeout);
-        msgTimeout = setTimeout(() => { msgBox.style.display = 'none'; }, 1500);
-    }
- 
-    // ─── Input ────────────────────────────────────────────────────
-    window.addEventListener('keydown', e => {
-        state.keys[e.key] = true;
-        if (e.key === '1') setBand('C');
-        if (e.key === '2') setBand('L');
-        if (e.key === '3') setBand('P');
-        // Evita rolagem da página com setas/espaço
-        if ([' ', 'ArrowLeft', 'ArrowRight'].includes(e.key)) e.preventDefault();
-    });
-    window.addEventListener('keyup', e => { state.keys[e.key] = false; });
- 
-    // Controles mobile
-    function bindMobileBtn(id, key) {
-        const el = document.getElementById(id);
-        if (!el) return;
-        const down = () => { state.keys[key] = true; };
-        const up   = () => { state.keys[key] = false; };
-        el.addEventListener('touchstart', down, { passive: true });
-        el.addEventListener('touchend',   up,   { passive: true });
-        el.addEventListener('mousedown',  down);
-        el.addEventListener('mouseup',    up);
-    }
-    bindMobileBtn('btn-left',  'ArrowLeft');
-    bindMobileBtn('btn-right', 'ArrowRight');
-    bindMobileBtn('btn-beam',  ' ');
- 
-    // ─── Update ───────────────────────────────────────────────────
-    function update() {
-        // Movimento do drone
-        if (state.keys['ArrowLeft'])  state.drone.x -= state.drone.speed;
-        if (state.keys['ArrowRight']) state.drone.x += state.drone.speed;
-        state.drone.x = Math.max(50, Math.min(width - 110, state.drone.x));
- 
-        // Paisagem
-        state.landscapeOffset += LANDSCAPE_SPEED;
-        if (state.landscapeOffset > 100000) state.landscapeOffset = 0;
- 
-        // Spawn de novos alvos
-        const now = performance.now();
-        if (now - state.lastSpawnTime > state.nextSpawnDelay) {
-            state.targets.push(createTarget());
-            state.lastSpawnTime = now;
-            state.nextSpawnDelay = TARGET_SPAWN_MIN_DELAY + Math.random() * TARGET_SPAWN_VARIANCE;
-        }
- 
-        const spaceDown = state.keys[' '] || state.keys['Space'];
-        const beamActive = spaceDown;
-        const droneCX = state.drone.x + 30;
- 
-        // ── Coleta de alvos L / P ──────────────────────────────────
-        state.targets.forEach(t => {
-            t.x += t.vx;
- 
-            if (!t.collected && t.type === state.band && spaceDown) {
-                if (Math.abs(droneCX - t.x) < COLLECTION_DISTANCE) {
-                    t.collected = true;
-                    state.inventory[t.type]++;
-                    const el = document.getElementById(`count-${t.type}`);
-                    if (el) el.innerText = state.inventory[t.type];
- 
-                    const msgs = MESSAGES[t.type] || ['Alvo coletado.'];
-                    showMessage(msgs[Math.floor(Math.random() * msgs.length)]);
- 
-                    // Reposição após animação de coleta
-                    setTimeout(() => {
-                        state.targets = state.targets.filter(item => item.id !== t.id);
-                        state.targets.push(createTarget());
-                    }, 800);
-                }
-            }
+// ═══════════════════════════════════════════════════════
+//  MAPEAMENTO DE GAMEPAD GENÉRICO BLUETOOTH
+//  Suporta: Xbox, PS4/PS5, Switch Pro, genéricos XInput
+//  Baseado no padrão W3C Gamepad API (Standard Mapping)
+// ═══════════════════════════════════════════════════════
+
+/**
+ * Índices padrão do Standard Gamepad Layout (W3C):
+ * 
+ * BOTÕES FACE:
+ *   0 = A / Cross(✕) / B(Switch)
+ *   1 = B / Circle(○) / A(Switch)
+ *   2 = X / Square(□) / Y(Switch)
+ *   3 = Y / Triangle(△) / X(Switch)
+ *
+ * GATILHOS / BUMPERS:
+ *   4 = LB / L1
+ *   5 = RB / R1
+ *   6 = LT / L2
+ *   7 = RT / R2
+ *
+ * ESPECIAIS:
+ *   8 = Select / Share / Minus
+ *   9 = Start / Options / Plus
+ *  10 = L3 (analógico esquerdo pressionado)
+ *  11 = R3 (analógico direito pressionado)
+ *
+ * D-PAD:
+ *  12 = Cima
+ *  13 = Baixo
+ *  14 = Esquerda
+ *  15 = Direita
+ *
+ * EIXOS (Axes):
+ *   0 = Analógico Esquerdo X  (-1 = esq, +1 = dir)
+ *   1 = Analógico Esquerdo Y  (-1 = cima, +1 = baixo)
+ *   2 = Analógico Direito X
+ *   3 = Analógico Direito Y
+ *
+ * Controles genéricos não-padronizados podem ter índices
+ * diferentes. O sistema detecta e adapta automaticamente.
+ */
+
+const GP_MAP = {
+    // Botão de feixe/ação (qualquer desses botões dispara o feixe)
+    BEAM:       [0, 1, 2, 3, 6, 7],   // A/Cross, B/Circle, X/Square, Y/Triangle, LT/L2, RT/R2
+    // Banda C
+    BAND_C:     [4, 6],             // LB / L1 / LT / L2
+    // Banda L
+    BAND_L:     [5, 7],             // RB / R1 / RT / R2
+    // Próxima banda
+    BAND_NEXT:  [3],                // Y / Triangle / X/Square
+    // Toggle debug
+    DEBUG:      [8, 9],             // Select/Start
+    // D-pad
+    DPAD_LEFT:  [14],
+    DPAD_RIGHT: [15],
+    DPAD_UP:    [12],
+    DPAD_DOWN:  [13],
+};
+
+const START_BUTTONS = [0, 9]; // A/Cross or Start/Options
+
+// Deadzone para eixos analógicos
+const AXIS_DEADZONE = 0.18;
+
+// ─── Gamepad Manager ──────────────────────────────────
+const GamepadManager = (() => {
+    let _gp = null;
+    let _prevPressed = new Set();
+    let _justPressed = new Set();
+    let _justReleased = new Set();
+    let _onConnect = null;
+    let _onDisconnect = null;
+    let _debugVisible = false;
+
+    function init(onConnect, onDisconnect) {
+        _onConnect = onConnect;
+        _onDisconnect = onDisconnect;
+
+        window.addEventListener('gamepadconnected', e => {
+            activeGamepadIndex = e.gamepad.index;
+            _gp = e.gamepad;
+            showToast(`🎮 Conectado: ${_shortName(e.gamepad.id)}`, false);
+            if (_onConnect) _onConnect(e.gamepad);
         });
- 
-        // Remove alvos fora da tela ou já coletados
-        state.targets = state.targets.filter(t => !t.collected && t.x > -150);
- 
-        // ── Mapeamento de árvores (Banda C) ───────────────────────
-        if (state.band === 'C' && beamActive) {
-            const xOffset = state.landscapeOffset % TREE_SPACING;
-            state.trees.forEach(tree => {
-                const treeCenterX = tree.index * TREE_SPACING - xOffset + 104;
-                if (!tree.marked && Math.abs(treeCenterX - droneCX) < TREE_HIGHLIGHT_RADIUS) {
-                    tree.marked = true;
-                    tree.currentImage = treeImage11;
-                    state.inventory['C']++;
-                    const el = document.getElementById('count-C');
-                    if (el) el.innerText = state.inventory['C'];
-                    const msgs = MESSAGES.C;
-                    showMessage(msgs[Math.floor(Math.random() * msgs.length)]);
-                }
+
+        window.addEventListener('gamepaddisconnected', e => {
+            if (activeGamepadIndex === e.gamepad.index) activeGamepadIndex = null;
+            _gp = null;
+            _prevPressed.clear();
+            _justPressed.clear();
+            showToast(`❌ Desconectado: ${_shortName(e.gamepad.id)}`, true);
+            if (_onDisconnect) _onDisconnect();
+        });
+    }
+
+    function _shortName(id) {
+        // Encurta nomes longos de UUID
+        return id.length > 40 ? id.substring(0, 38) + '…' : id;
+    }
+
+    // Chamado a cada frame — atualiza estado interno
+    function poll() {
+        const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+        let raw = null;
+        if (activeGamepadIndex != null) {
+            raw = gamepads[activeGamepadIndex];
+        }
+        if (!raw || !(raw.buttons?.length > 0 || raw.axes?.length > 0)) {
+            raw = Array.from(gamepads).find(g => g && (g.connected || g.buttons?.length > 0 || g.axes?.length > 0));
+        }
+
+        if (!raw) {
+            if (_gp) {
+                _gp = null;
+                showToast('❌ Gamepad desconectado', true);
+                if (_onDisconnect) _onDisconnect();
+            }
+            _justPressed.clear();
+            _justReleased.clear();
+            return;
+        }
+
+        // Detectar novo gamepad por polling (alguns navegadores/BT não disparam evento)
+        if (!_gp || _gp.index !== raw.index) {
+            _gp = raw;
+            showToast(`🎮 Detectado: ${_shortName(raw.id)}`, false);
+            if (_onConnect) _onConnect(raw);
+        } else {
+            _gp = raw; // sempre pegar o snapshot mais recente
+        }
+
+        // Calcular justPressed / justReleased
+        _justPressed.clear();
+        _justReleased.clear();
+
+        const currentPressed = new Set();
+        for (let i = 0; i < raw.buttons.length; i++) {
+            const btn = raw.buttons[i];
+            const pressed = btn && (btn.pressed || btn.value > 0.5);
+            if (pressed) currentPressed.add(i);
+        }
+
+        currentPressed.forEach(i => {
+            if (!_prevPressed.has(i)) _justPressed.add(i);
+        });
+        _prevPressed.forEach(i => {
+            if (!currentPressed.has(i)) _justReleased.add(i);
+        });
+        _prevPressed = new Set(currentPressed);
+    }
+
+    // Verifica se qualquer botão de um array está pressionado
+    function isAnyHeld(indices) {
+        if (!_gp) return false;
+        return indices.some(i => {
+            const btn = _gp.buttons[i];
+            return btn && (btn.pressed || btn.value > 0.5);
+        });
+    }
+
+    // Verifica se qualquer botão de um array acabou de ser pressionado (rising edge)
+    function isAnyJustPressed(indices) {
+        return indices.some(i => _justPressed.has(i));
+    }
+
+    // Lê eixo analógico com deadzone
+    function axis(index) {
+        if (!_gp || index >= _gp.axes.length) return 0;
+        const v = _gp.axes[index];
+        return Math.abs(v) > AXIS_DEADZONE ? v : 0;
+    }
+
+    // Movimento horizontal: analógico esquerdo OU d-pad
+    function moveX() {
+        if (!_gp) return 0;
+        const analog = axis(0) || axis(2);
+        if (analog !== 0) return analog;
+        if (isAnyHeld(GP_MAP.DPAD_LEFT))  return -1;
+        if (isAnyHeld(GP_MAP.DPAD_RIGHT)) return  1;
+        return 0;
+    }
+
+    function isConnected() { return !!_gp; }
+    function getInfo() { return _gp; }
+
+    // ── Debug UI ──────────────────────────────────────
+    function toggleDebug() {
+        _debugVisible = !_debugVisible;
+        const panel = document.getElementById('gamepad-panel');
+        if (panel) panel.classList.toggle('visible', _debugVisible);
+    }
+
+    function updateDebugUI() {
+        if (!_debugVisible || !_gp) return;
+        const gp = _gp;
+
+        const nameEl = document.getElementById('gp-name');
+        if (nameEl) nameEl.textContent = `${gp.id} (${gp.buttons.length} botões, ${gp.axes.length} eixos)`;
+
+        const grid = document.getElementById('gp-buttons-grid');
+        if (grid) {
+            grid.innerHTML = '';
+            gp.buttons.forEach((btn, i) => {
+                const row = document.createElement('div');
+                row.className = 'gp-row';
+                const pressed = btn?.pressed;
+                const val = typeof btn?.value === 'number' ? btn.value.toFixed(2) : '0.00';
+                row.innerHTML = `<span class="gp-label">Btn ${i}</span><span class="gp-value ${pressed ? 'active-val' : ''}">${pressed ? '● ' : '○ '}${val}</span>`;
+                grid.appendChild(row);
+            });
+        }
+
+        const axesRow = document.getElementById('gp-axes-row');
+        if (axesRow) {
+            axesRow.innerHTML = '';
+            gp.axes.forEach((v, i) => {
+                const pct = ((v + 1) / 2) * 100;
+                const wrap = document.createElement('div');
+                wrap.className = 'axis-bar-wrap';
+                wrap.innerHTML = `
+                    <span class="gp-label" style="font-size:10px;">A${i}</span>
+                    <div class="axis-bar-bg">
+                        <div class="axis-bar-fill" style="left:${Math.min(pct,50)}%;width:${Math.abs(pct-50)}%;"></div>
+                    </div>
+                    <span class="gp-value" style="font-size:10px;min-width:40px">${v.toFixed(2)}</span>`;
+                axesRow.appendChild(wrap);
             });
         }
     }
- 
-    // ─── Draw ─────────────────────────────────────────────────────
-    function draw() {
-        ctx.clearRect(0, 0, width, height);
- 
-        // Fundo
-        if (backgroundImage.complete && backgroundImage.naturalWidth !== 0) {
-            ctx.drawImage(backgroundImage, 0, 0, width, height);
-        } else {
-            // Fallback visual
-            ctx.fillStyle = COLORS.SKY;
-            ctx.fillRect(0, 0, width, height);
- 
-            const hillOffset = state.landscapeOffset * 0.5;
-            ctx.fillStyle = '#e8eff4';
-            for (let i = 0; i < 5; i++) {
-                let hx = ((i * 320) - hillOffset % (width + 320));
-                ctx.beginPath();
-                ctx.ellipse(hx, 420, 220, 140, 0, 0, Math.PI * 2);
-                ctx.fill();
-            }
- 
-            ctx.fillStyle = COLORS.SOIL_DEEP;
-            ctx.fillRect(0, 550, width, height - 550);
-            ctx.fillStyle = COLORS.SOIL_TOP;
-            ctx.fillRect(0, 520, width, 30);
-            ctx.strokeStyle = '#b8af8c';
-            ctx.lineWidth = 2;
-            ctx.beginPath(); ctx.moveTo(0, 520); ctx.lineTo(width, 520); ctx.stroke();
+
+    return { init, poll, isAnyHeld, isAnyJustPressed, axis, moveX, isConnected, getInfo, toggleDebug, updateDebugUI };
+})();
+
+// ─── Toast helper ─────────────────────────────────────
+let _toastTimeout = null;
+function showToast(msg, isError = false) {
+    const el = document.getElementById('gp-toast');
+    if (!el) return;
+    el.textContent = msg;
+    el.className = isError ? 'error' : '';
+    el.style.display = 'block';
+    if (_toastTimeout) clearTimeout(_toastTimeout);
+    _toastTimeout = setTimeout(() => { el.style.display = 'none'; }, 3000);
+}
+
+// ═══════════════════════════════════════════════════════
+//  CONSTANTES DO JOGO
+// ═══════════════════════════════════════════════════════
+const DRONE_SPEED              = 6;
+const LANDSCAPE_SPEED          = 1.8;
+const TREE_SPACING             = 250;
+const TREE_HIGHLIGHT_RADIUS    = 45;
+const TARGET_SPAWN_MIN_DELAY   = 1200;
+const TARGET_SPAWN_VARIANCE    = 2000;
+const TARGET_VELOCITY_MIN      = -1;
+const TARGET_VELOCITY_VARIANCE = 1.2;
+const COLLECTION_DISTANCE      = 50;
+const TREE_LEAVES_RADIUS       = 70;
+
+const COLORS = {
+    C: '#FFCC00',
+    L: '#F57C00',
+    P: '#795548',
+    SKY: '#eef2f5',
+    LEAVES: '#a8c69f',
+    TRUNK: '#7c6a5a',
+    SOIL_TOP: '#dcd6bc',
+    SOIL_DEEP: '#c8bf9d'
+};
+
+const MESSAGES = {
+    C: [
+        "Dureza foliar mapeada: copa saudável.",
+        "Índice de área foliar registrado.",
+        "Estrutura do dossel analisada."
+    ],
+    L: [
+        "Volume de tronco estimado: +50kg de biomassa.",
+        "Estrutura lenhosa detectada sob as folhas.",
+        "Densidade da madeira registrada."
+    ],
+    P: [
+        "Umidade do solo detectada a 50cm de profundidade.",
+        "Formigueiro subterrâneo identificado!",
+        "Anomalia geológica detectada no subsolo."
+    ]
+};
+
+// ─── Canvas ───────────────────────────────────────────
+const canvas = document.getElementById('gameCanvas');
+const ctx    = canvas.getContext('2d');
+const msgBox = document.getElementById('message-box');
+ctx.imageSmoothingEnabled = true;
+ctx.imageSmoothingQuality = 'high';
+
+// ─── Imagens ──────────────────────────────────────────
+function loadImage(src) {
+    const img = new Image();
+    img.src = src;
+    img.onerror = () => console.warn(`Imagem não encontrada: ${src}`);
+    return img;
+}
+
+const droneImage      = loadImage('drone.png');
+const antImage        = loadImage('formiga.png');
+const treeImage1      = loadImage('arvore1.png');
+const treeImage11     = loadImage('arvore11.png');
+const backgroundImage = loadImage('fundo.png');
+const troncoImage     = loadImage('tronco.png');
+
+// ─── Estado ───────────────────────────────────────────
+const state = {
+    drone: { x: 400, y: 80, speed: DRONE_SPEED },
+    band: 'C',
+    inventory: { C: 0, L: 0, P: 0 },
+    targets: [],
+    trees: [],
+    keys: {},
+    landscapeOffset: 0,
+    lastSpawnTime: performance.now(),
+    nextSpawnDelay: TARGET_SPAWN_MIN_DELAY + Math.random() * TARGET_SPAWN_VARIANCE
+};
+
+let width, height;
+let gameStarted = false;
+let activeGamepadIndex = null;
+let prevGamepadPressed = [];
+const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+// ─── Resize ───────────────────────────────────────────
+function resize() {
+    width  = canvas.width  = window.innerWidth;
+    height = canvas.height = window.innerHeight;
+    createTrees();
+}
+
+function createTrees() {
+    state.trees = [];
+    const count = Math.ceil(width / TREE_SPACING) + 3;
+    for (let i = -1; i < count; i++) {
+        state.trees.push({ index: i, marked: false, currentImage: treeImage1 });
+    }
+}
+
+window.addEventListener('resize', resize);
+resize();
+
+// ─── Início ───────────────────────────────────────────
+function startGame() {
+    const startScreen = document.getElementById('start-screen');
+    if (startScreen) startScreen.style.display = 'none';
+    if (isMobile) {
+        const mc = document.getElementById('mobile-controls');
+        if (mc) mc.classList.add('show');
+    }
+    gameStarted = true;
+    resize();
+    for (let i = 0; i < 5; i++) state.targets.push(createTarget());
+    requestAnimationFrame(gameLoop);
+}
+
+document.getElementById('btn-play').addEventListener('click', startGame);
+
+requestAnimationFrame(waitForStartButton);
+
+function waitForStartButton() {
+    if (!gameStarted) {
+        GamepadManager.poll();
+        if (GamepadManager.isAnyJustPressed(START_BUTTONS)) {
+            startGame();
+            return;
         }
- 
-        // Árvores
+        requestAnimationFrame(waitForStartButton);
+    }
+}
+
+// Inicializar GamepadManager
+GamepadManager.init(
+    (gp) => { /* callback de conexão */ },
+    ()    => { /* callback de desconexão */ }
+);
+
+// ─── Alvos ────────────────────────────────────────────
+function createTarget() {
+    const types = ['L', 'P'];
+    const type  = types[Math.floor(Math.random() * types.length)];
+    const yPos  = type === 'L' ? 450 : 600;
+    const isAnt = type === 'P' && Math.random() < 0.5;
+    return {
+        id: Math.random(),
+        x: Math.random() * (width - 300) + 150,
+        y: yPos,
+        type,
+        collected: false,
+        isAnt,
+        vx: TARGET_VELOCITY_MIN - Math.random() * TARGET_VELOCITY_VARIANCE
+    };
+}
+
+// ─── UI helpers ───────────────────────────────────────
+function setBand(b) {
+    state.band = b;
+    document.querySelectorAll('.band-btn').forEach(btn => btn.classList.remove('active'));
+    const btn = document.getElementById(`btn-${b.toLowerCase()}`);
+    if (btn) btn.classList.add('active');
+}
+
+function togglePanel(btn) {
+    const content = document.getElementById('panel-content');
+    if (content.style.display === 'none') {
+        content.style.display = 'block';
+        btn.textContent = '−';
+    } else {
+        content.style.display = 'none';
+        btn.textContent = '+';
+    }
+}
+
+let msgTimeout = null;
+function showMessage(text) {
+    msgBox.textContent = text;
+    msgBox.style.display = 'block';
+    if (msgTimeout) clearTimeout(msgTimeout);
+    msgTimeout = setTimeout(() => { msgBox.style.display = 'none'; }, 1500);
+}
+
+// ─── Input teclado ────────────────────────────────────
+window.addEventListener('keydown', e => {
+    state.keys[e.key] = true;
+    if (e.key === '1') setBand('C');
+    if (e.key === '2') setBand('L');
+    if (e.key === '3') setBand('P');
+    if (['d', 'D'].includes(e.key)) GamepadManager.toggleDebug();
+    if ([' ', 'ArrowLeft', 'ArrowRight'].includes(e.key)) e.preventDefault();
+});
+window.addEventListener('keyup', e => { state.keys[e.key] = false; });
+
+// Mobile
+function bindMobileBtn(id, key) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const down = () => { state.keys[key] = true; };
+    const up   = () => { state.keys[key] = false; };
+    el.addEventListener('touchstart', down, { passive: true });
+    el.addEventListener('touchend',   up,   { passive: true });
+    el.addEventListener('mousedown',  down);
+    el.addEventListener('mouseup',    up);
+}
+bindMobileBtn('btn-left',  'ArrowLeft');
+bindMobileBtn('btn-right', 'ArrowRight');
+bindMobileBtn('btn-beam',  ' ');
+
+// ─── Update ───────────────────────────────────────────
+function update() {
+    GamepadManager.poll();
+
+    if (GamepadManager.isAnyJustPressed(GP_MAP.BAND_C)) setBand('C');
+    if (GamepadManager.isAnyJustPressed(GP_MAP.BAND_L)) setBand('L');
+    if (GamepadManager.isAnyJustPressed(GP_MAP.BAND_NEXT)) {
+        const bands = ['C', 'L', 'P'];
+        setBand(bands[(bands.indexOf(state.band) + 1) % bands.length]);
+    }
+    if (GamepadManager.isAnyJustPressed(GP_MAP.DEBUG)) {
+        GamepadManager.toggleDebug();
+    }
+
+    const gpX = GamepadManager.moveX();
+    const keyboardLeft  = !!state.keys['ArrowLeft'];
+    const keyboardRight = !!state.keys['ArrowRight'];
+
+    if (keyboardLeft  || gpX < 0) state.drone.x -= state.drone.speed * Math.max(1, Math.abs(gpX));
+    if (keyboardRight || gpX > 0) state.drone.x += state.drone.speed * Math.max(1, Math.abs(gpX));
+    state.drone.x = Math.max(50, Math.min(width - 110, state.drone.x));
+
+    const keyBeam = !!state.keys[' '] || !!state.keys['Space'];
+    const gpBeam  = GamepadManager.isAnyHeld(GP_MAP.BEAM);
+    const beamActive = keyBeam || gpBeam;
+
+    // Paisagem
+    state.landscapeOffset += LANDSCAPE_SPEED;
+    if (state.landscapeOffset > 100000) state.landscapeOffset = 0;
+
+    // Spawn de novos alvos
+    const now = performance.now();
+    if (now - state.lastSpawnTime > state.nextSpawnDelay) {
+        state.targets.push(createTarget());
+        state.lastSpawnTime = now;
+        state.nextSpawnDelay = TARGET_SPAWN_MIN_DELAY + Math.random() * TARGET_SPAWN_VARIANCE;
+    }
+
+    const droneCX = state.drone.x + 30;
+
+    // ── Coleta de alvos L / P ──────────────────────
+    state.targets.forEach(t => {
+        t.x += t.vx;
+
+        if (!t.collected && t.type === state.band && beamActive) {
+            if (Math.abs(droneCX - t.x) < COLLECTION_DISTANCE) {
+                t.collected = true;
+                state.inventory[t.type]++;
+                const el = document.getElementById(`count-${t.type}`);
+                if (el) el.innerText = state.inventory[t.type];
+
+                const msgs = MESSAGES[t.type] || ['Alvo coletado.'];
+                showMessage(msgs[Math.floor(Math.random() * msgs.length)]);
+
+                setTimeout(() => {
+                    state.targets = state.targets.filter(item => item.id !== t.id);
+                    state.targets.push(createTarget());
+                }, 800);
+            }
+        }
+    });
+
+    state.targets = state.targets.filter(t => !t.collected && t.x > -150);
+
+    // ── Mapeamento de árvores (Banda C) ───────────
+    if (state.band === 'C' && beamActive) {
         const xOffset = state.landscapeOffset % TREE_SPACING;
         state.trees.forEach(tree => {
-            const x = tree.index * TREE_SPACING - xOffset;
-            const treeCenterX = x + 104;
-            if (x < -200 || x > width + 200) return; // fora da tela, pula
- 
-            const img = tree.currentImage;
-            const treeW = 180, treeH = 280;
-            const treeX = treeCenterX - treeW / 2;
-            const treeY = 280;
- 
-            if (img.complete && img.naturalWidth !== 0) {
-                ctx.drawImage(img, treeX, treeY, treeW, treeH);
-            } else {
-                // Fallback: árvore vetorial
-                ctx.fillStyle = COLORS.TRUNK;
-                ctx.fillRect(treeCenterX - 4, 380, 8, 140);
-                ctx.fillStyle = COLORS.LEAVES;
-                ctx.beginPath();
-                ctx.arc(treeCenterX, 340, TREE_LEAVES_RADIUS, 0, Math.PI * 2);
-                ctx.fill();
+            const treeCenterX = tree.index * TREE_SPACING - xOffset + 104;
+            if (!tree.marked && Math.abs(treeCenterX - droneCX) < TREE_HIGHLIGHT_RADIUS) {
+                tree.marked = true;
+                tree.currentImage = treeImage11;
+                state.inventory['C']++;
+                const el = document.getElementById('count-C');
+                if (el) el.innerText = state.inventory['C'];
+                showMessage(MESSAGES.C[Math.floor(Math.random() * MESSAGES.C.length)]);
             }
         });
- 
-        // Feixe de radar (apenas com espaço pressionado)
-        const spaceDown = state.keys[' '] || state.keys['Space'];
-        if (spaceDown) {
-            const dcx = state.drone.x + 30;
-            const dcy = state.drone.y + 20;
-            ctx.save();
-            ctx.globalAlpha = 0.45;
-            ctx.fillStyle = COLORS[state.band];
-            const beamDepth = state.band === 'C' ? 350 : state.band === 'L' ? 520 : height;
+    }
+
+    // Atualizar debug UI
+    GamepadManager.updateDebugUI();
+}
+
+// ─── Draw ─────────────────────────────────────────────
+function draw() {
+    ctx.clearRect(0, 0, width, height);
+
+    if (backgroundImage.complete && backgroundImage.naturalWidth !== 0) {
+        ctx.drawImage(backgroundImage, 0, 0, width, height);
+    } else {
+        ctx.fillStyle = COLORS.SKY;
+        ctx.fillRect(0, 0, width, height);
+
+        const hillOffset = state.landscapeOffset * 0.5;
+        ctx.fillStyle = '#e8eff4';
+        for (let i = 0; i < 5; i++) {
+            let hx = ((i * 320) - hillOffset % (width + 320));
             ctx.beginPath();
-            ctx.moveTo(dcx - 5, dcy);
-            ctx.lineTo(dcx + 5, dcy);
-            ctx.lineTo(dcx + 40, beamDepth);
-            ctx.lineTo(dcx - 40, beamDepth);
-            ctx.closePath();
+            ctx.ellipse(hx, 420, 220, 140, 0, 0, Math.PI * 2);
             ctx.fill();
-            ctx.restore();
         }
- 
-        // Alvos L / P
-        state.targets.forEach(t => {
-            if (t.collected) return;
-            const isActive = t.type === state.band;
- 
-            if (t.isAnt && antImage.complete && antImage.naturalWidth !== 0) {
-                const sz = 80;
-                ctx.drawImage(antImage, t.x - sz / 2, t.y - sz / 2, sz, sz);
-            } else {
-                ctx.beginPath();
-                ctx.arc(t.x, t.y, isActive ? 20 : 8, 0, Math.PI * 2);
-                ctx.fillStyle = isActive ? COLORS[t.type] : 'rgba(0,0,0,0.05)';
-                ctx.fill();
-                if (isActive) {
-                    ctx.strokeStyle = '#fff';
-                    ctx.setLineDash([4, 2]);
-                    ctx.lineWidth = 2;
-                    ctx.stroke();
-                    ctx.setLineDash([]);
-                }
-            }
-        });
- 
-        // Drone
-        drawDrone(state.drone.x, state.drone.y);
+
+        ctx.fillStyle = COLORS.SOIL_DEEP;
+        ctx.fillRect(0, 550, width, height - 550);
+        ctx.fillStyle = COLORS.SOIL_TOP;
+        ctx.fillRect(0, 520, width, 30);
+        ctx.strokeStyle = '#b8af8c';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(0, 520); ctx.lineTo(width, 520); ctx.stroke();
     }
- 
-    function drawDrone(x, y) {
-        const droneW = 160, droneH = 96;
-        if (droneImage.complete && droneImage.naturalWidth !== 0) {
-            ctx.drawImage(droneImage, x - 50, y - 44, droneW, droneH);
+
+    // Árvores
+    const xOffset = state.landscapeOffset % TREE_SPACING;
+    state.trees.forEach(tree => {
+        const x = tree.index * TREE_SPACING - xOffset;
+        const treeCenterX = x + 104;
+        if (x < -200 || x > width + 200) return;
+
+        const img = tree.currentImage;
+        const treeW = 180, treeH = 280;
+        const treeX = treeCenterX - treeW / 2;
+        const treeY = 280;
+
+        if (img.complete && img.naturalWidth !== 0) {
+            ctx.drawImage(img, treeX, treeY, treeW, treeH);
         } else {
-            // Fallback vetorial
-            ctx.save();
-            ctx.translate(x - 50, y - 44);
-            ctx.fillStyle = '#4a5568';
-            ctx.fillRect(0, 0, 120, 24);
-            ctx.strokeStyle = '#2d3748';
-            ctx.lineWidth = 6;
+            ctx.fillStyle = COLORS.TRUNK;
+            ctx.fillRect(treeCenterX - 4, 380, 8, 140);
+            ctx.fillStyle = COLORS.LEAVES;
             ctx.beginPath();
-            ctx.moveTo(20, 0);  ctx.lineTo(0, -30);
-            ctx.moveTo(100, 0); ctx.lineTo(120, -30);
-            ctx.stroke();
-            ctx.restore();
+            ctx.arc(treeCenterX, 340, TREE_LEAVES_RADIUS, 0, Math.PI * 2);
+            ctx.fill();
         }
+    });
+
+    // Feixe de radar
+    const keyBeam = !!state.keys[' '] || !!state.keys['Space'];
+    const gpBeam  = GamepadManager.isAnyHeld(GP_MAP.BEAM);
+    if (keyBeam || gpBeam) {
+        const dcx = state.drone.x + 30;
+        const dcy = state.drone.y + 20;
+        ctx.save();
+        ctx.globalAlpha = 0.45;
+        ctx.fillStyle = COLORS[state.band];
+        const beamDepth = state.band === 'C' ? 350 : state.band === 'L' ? 520 : height;
+        ctx.beginPath();
+        ctx.moveTo(dcx - 5, dcy);
+        ctx.lineTo(dcx + 5, dcy);
+        ctx.lineTo(dcx + 40, beamDepth);
+        ctx.lineTo(dcx - 40, beamDepth);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
     }
- 
-    // ─── Game Loop ────────────────────────────────────────────────
-    // CORREÇÃO: loop único e limpo — update sempre, draw sempre.
-    // Remover a lógica de needsRedraw que quebrava o loop.
-    function gameLoop() {
-        if (!gameStarted) return;
-        update();
-        draw();
-        requestAnimationFrame(gameLoop);
+
+    // Alvos L / P
+    state.targets.forEach(t => {
+        if (t.collected) return;
+        const isActive = t.type === state.band;
+
+        if (t.isAnt && antImage.complete && antImage.naturalWidth !== 0) {
+            const sz = 80;
+            ctx.drawImage(antImage, t.x - sz / 2, t.y - sz / 2, sz, sz);
+        } else if (t.type === 'L' && troncoImage.complete && troncoImage.naturalWidth !== 0) {
+            const sz = 80;
+            ctx.drawImage(troncoImage, t.x - sz / 2, t.y - sz / 2, sz, sz);
+        } else {
+            ctx.beginPath();
+            ctx.arc(t.x, t.y, isActive ? 20 : 8, 0, Math.PI * 2);
+            ctx.fillStyle = isActive ? COLORS[t.type] : 'rgba(0,0,0,0.05)';
+            ctx.fill();
+            if (isActive) {
+                ctx.strokeStyle = '#fff';
+                ctx.setLineDash([4, 2]);
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+        }
+    });
+
+    // Indicador de gamepad conectado (canto inferior esquerdo)
+    if (GamepadManager.isConnected()) {
+        const info = GamepadManager.getInfo();
+        ctx.save();
+        ctx.globalAlpha = 0.6;
+        ctx.fillStyle = '#000';
+        ctx.fillRect(10, height - 32, 220, 22);
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = '#4ade80';
+        ctx.font = '11px Courier New';
+        ctx.fillText(`🎮 ${info.id.substring(0, 26)}…`, 14, height - 16);
+        ctx.restore();
     }
+
+    drawDrone(state.drone.x, state.drone.y);
+}
+
+function drawDrone(x, y) {
+    const droneW = 160, droneH = 96;
+    if (droneImage.complete && droneImage.naturalWidth !== 0) {
+        ctx.drawImage(droneImage, x - 50, y - 44, droneW, droneH);
+    } else {
+        ctx.save();
+        ctx.translate(x - 50, y - 44);
+        ctx.fillStyle = '#4a5568';
+        ctx.fillRect(0, 0, 120, 24);
+        ctx.strokeStyle = '#2d3748';
+        ctx.lineWidth = 6;
+        ctx.beginPath();
+        ctx.moveTo(20, 0);  ctx.lineTo(0, -30);
+        ctx.moveTo(100, 0); ctx.lineTo(120, -30);
+        ctx.stroke();
+        ctx.restore();
+    }
+}
+
+// ─── Game Loop ────────────────────────────────────────
+function gameLoop() {
+    if (!gameStarted) return;
+    update();
+    draw();
+    requestAnimationFrame(gameLoop);
+}
 </script>
 </body>
 </html>
